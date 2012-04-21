@@ -94,7 +94,9 @@ function guid() {
    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
 }
 
-setupWax();
-//setupLeaflet();
-//
-//
+$(document).ready(function() {
+  $('#birdItBtn').click(function(e) {
+    $('#splash').addClass('hidden');
+    setupWax();
+  });
+});
