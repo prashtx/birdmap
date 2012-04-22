@@ -1,4 +1,6 @@
 var birdBounds;
+var marker_tracker = {};
+var birdGroup;
 
 function setupWax() {
   var map = new L.Map('map');
@@ -23,6 +25,9 @@ function setupWax() {
       map.locate();
     }, 5000);
 
+    birdGroup = new L.FeatureGroup();
+    map.addLayer(birdGroup);
+
     function onLocationFound(e) {
       var locations = postLocation(e.latlng, map);
     }
@@ -42,36 +47,45 @@ function postLocation(latlng, map) {
   }, 'json');
 }
 
-//markers = [];
-var birdGroup;
-
 function markLocations(map, locations) {
   console.log('Got ' + locations.length + ' locations.');
-  //for (var i = 0; i < markers.length; i ++) {
-  //  map.removeLayer(markers[i]);
-  //}
-  if (birdGroup) {
-    map.removeLayer(birdGroup);
-  }
-  var markers = [];
+  var new_marker_tracker = {};
   for (var i = 0; i < locations.length; i++) {
+    var cid = locations[i].id
     var loc = locations[i].latlong;
     var latlng = {lat: loc[0], lng: loc[1]};
-    if (locations[i].id == getID()) {
-      marker = new L.Marker(latlng, {icon: myBirdIcon});
-    } else {
-      marker = new L.Marker(latlng, {icon: birdIcon});
-    }
-    markers.push(marker);
-    birdGroup = new L.FeatureGroup(markers);
-    map.addLayer(birdGroup);
 
-    // If this is the first set of locations, set the bounds.
-    //if (birdBounds == undefined) {
-    //  birdBounds = birdGroup.getBounds();
-    //  map.fitBounds(birdBounds);
-    //}
+    if (cid in marker_tracker) {
+      // We're already tracking this birdmap. Just update it.
+      console.log('Updating marker for client ' + cid);
+      marker_tracker[cid].setLatLng(latlng);
+      new_marker_tracker[cid] = marker;
+    } else {
+      // This is a new birdmap.
+      if (cid == getID()) {
+        // Our birdmap
+        marker = new L.Marker(latlng, {icon: myBirdIcon});
+      } else {
+        // Someone else's birdmap
+        marker = new L.Marker(latlng, {icon: birdIcon});
+      }
+      // Add it to the tracker
+      new_marker_tracker[cid] = marker;
+      marker_tracker[cid] = marker;
+      // Add it to the map
+      birdGroup.addLayer(marker);
+      console.log('Adding new marker for client ' + cid);
+    }
   }
+  // Clean up the stale markers.
+  for (cid in marker_tracker) {
+    if (!(cid in new_marker_tracker)) {
+      birdGroup.removeLayer(marker_tracker[cid]);
+      console.log('Removing stale marker for client ' + cid);
+      delete marker_tracker[cid];
+    }
+  }
+  //marker_tracker = new_marker_tracker;
 }
 
 var BirdIcon = L.Icon.extend({
