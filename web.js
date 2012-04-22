@@ -74,32 +74,30 @@ app.get(/^\/(?!api\/)(.*)/, function(req, response) {
  *   location:
  *    {latlong: [10.01, 12.02], id: CLIENT_ID}
  * }
- * stored_locations = [
- *    {latlong: [10.01, 12.02], timestamp: SECONDS}
- *   ]
- * clients = {CLIENT_ID1: index1, CLIENT_ID2: index2}
+ * birdmaps = {
+ *   CLIENT_ID1: {latlong: [10.01, 12.02], timestamp: SECONDS, id: CLIENT_ID},
+ *   CLIENT_ID2: {...}
+ * }
  * response_data = {
  *   locations: [ {id: CLIENT_ID, latlong: [10.01, 12.02]}, ... ]
  *   ]
  * }
  */
 
-var stored_locations = [];
-//var stored_locations = [{latlong: [10.01, 12.02], timestamp: 100}, {latlong: [10.01, 12.02], timestamp: 100}, {latlong: [10.01, 12.02], timestamp: 100}];
 
-var clients = {};
+var birdmaps = {};
+var mapcount = 0;
 
-// TODO: when the stored_locations array is much larger than the clients dictionary, compact the stored_locations array.
+// Remove stale entries.
 var EXPIRATION = 10000;
 function sweep() {
   var time = (new Date()).getTime();
-  for (var client in clients) {
-    var index = clients[client];
-    if (stored_locations[index].timestamp + EXPIRATION < time) {
+  for (var cid in birdmaps) {
+    if (birdmaps[cid].timestamp + EXPIRATION < time) {
       // The entry is stale, so we remove it.
-      console.log('Removing location for client ' + client);
-      delete clients[client];
-      stored_locations[index] = undefined;
+      console.log('Removing location for client ' + cid);
+      delete birdmaps[cid];
+      mapcount--;
     }
   }
 }
@@ -107,29 +105,26 @@ function sweep() {
 function getLocations() {
   var locations = [];
 
-  for (cid in clients) {
-    var index = clients[cid];
-    var entry = {id: cid, latlong: stored_locations[index].latlong};
+  for (cid in birdmaps) {
+    var entry = {id: cid, latlong: birdmaps[cid].latlong}
     locations.push(entry);
   }
+
   return {locations: locations};
 }
 
 function addLocation(loc) {
   sweep();
   var date = new Date();
-  var index = clients[loc.id];
-  var location = {latlong: loc.latlong, timestamp: date.getTime()};
+  var cid = loc.id;
+  var location = {latlong: loc.latlong, timestamp: date.getTime(), id: cid};
   //
-  console.log('Adding location for client ' + loc.id + ': (' + loc.latlong[0] + ', ' + loc.latlong[1] + ')');
+  console.log('Recording location for client ' + loc.id + ': (' + loc.latlong[0] + ', ' + loc.latlong[1] + ')');
   //
-  if (index != null) {
-    stored_locations[index] = location;
-  } else {
-    stored_locations.push(location);
-    clients[loc.id] = stored_locations.length - 1;
-  }
-  console.log('We have ' + stored_locations.length + ' birds.');
+  // Track the number of birdmaps.
+  if (!(cid in birdmaps)) mapcount++;
+  birdmaps[cid] = location;
+  console.log('We have ' + mapcount + ' birds.');
 }
 
 app.get('/api/locations', function(req, response) {
