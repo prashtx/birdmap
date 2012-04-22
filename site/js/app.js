@@ -103,6 +103,7 @@ function guid() {
 $(document).ready(function() {
   $('#birdItBtn').click(function(e) {
     $('#splash').addClass('hidden');
+    $('#legend').removeClass('hidden');
     setupWax();
   });
 });
