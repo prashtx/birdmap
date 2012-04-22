@@ -54,11 +54,14 @@ function markLocations(map, locations) {
     map.removeLayer(birdGroup);
   }
   var markers = [];
-  var birdIcon = new BirdIcon();
   for (var i = 0; i < locations.length; i++) {
-    var loc = locations[i];
+    var loc = locations[i].latlong;
     var latlng = {lat: loc[0], lng: loc[1]};
-    marker = new L.Marker(latlng, {icon: birdIcon});
+    if (locations[i].id == getID()) {
+      marker = new L.Marker(latlng, {icon: myBirdIcon});
+    } else {
+      marker = new L.Marker(latlng, {icon: birdIcon});
+    }
     markers.push(marker);
     birdGroup = new L.FeatureGroup(markers);
     map.addLayer(birdGroup);
@@ -79,6 +82,9 @@ var BirdIcon = L.Icon.extend({
   iconAnchor: new L.Point(67, 67),
   popupAnchor: new L.Point(0,0)
 });
+
+var birdIcon = new BirdIcon();
+var myBirdIcon = new BirdIcon('img/mybird.png');
 
 var id = undefined;
 function getID() {

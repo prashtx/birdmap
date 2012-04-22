@@ -79,7 +79,7 @@ app.get(/^\/(?!api\/)(.*)/, function(req, response) {
  *   ]
  * clients = {CLIENT_ID1: index1, CLIENT_ID2: index2}
  * response_data = {
- *   locations: [ [10.01, 12.02],[10.01, 12.02],[10.01, 12.02] ]
+ *   locations: [ {id: CLIENT_ID, latlong: [10.01, 12.02]}, ... ]
  *   ]
  * }
  */
@@ -106,12 +106,11 @@ function sweep() {
 
 function getLocations() {
   var locations = [];
-  len = stored_locations.length;
-  //locations.length = len;
-  for (var i = 0; i < len; i++) {
-    if (stored_locations[i] != undefined) {
-      locations.push(stored_locations[i].latlong);
-    }
+
+  for (cid in clients) {
+    var index = clients[cid];
+    var entry = {id: cid, latlong: stored_locations[index].latlong};
+    locations.push(entry);
   }
   return {locations: locations};
 }
